@@ -1,0 +1,161 @@
+from PyQt5.QtWidgets import *
+from PyQt5 import QtCore
+
+class Window(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+
+        #layout
+        self.layout = QFormLayout()
+        self.setLayout(self.layout)
+        self.file_name = ''
+        self.setWindowTitle('Tax Calculation')
+        self.resize(720, 480)
+
+        #menubar
+        self.menubar = QMenuBar()
+        self.menubar.setNativeMenuBar(False)
+        self.menubar.show()
+
+        #menu
+        self.file_menu = self.menubar.addMenu('File')
+
+        #action
+        self.action_open = QAction('Open File', self)
+        self.action_open.setShortcut('Ctrl+O')
+        self.action_save = QAction('Save File', self)
+        self.action_save.setShortcut('Ctrl+S')
+        self.action_quit = QAction('Exit Application', self)
+        self.action_quit.setShortcut('Ctrl+Q')
+
+        #addAction
+        self.file_menu.addAction(self.action_open)
+        self.file_menu.addAction(self.action_save)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.action_quit)
+
+        self.AGI_lab = QLabel('Enter AGI (Annual Gross Income)')
+        self.AGI_in = QLineEdit()
+        self.NTI_lab = QLabel('Enter NTI (Non-Taxable Income)')
+        self.NTI_in  = QLineEdit()
+        self.button_calculate = QPushButton('Calculate')
+        self.AGI_lab2 = QLabel('Your AGI')
+        self.AGI_text = QLabel('')
+        self.NTI_lab2 = QLabel('Your NTI')
+        self.NTI_text = QLabel('')
+        self.TI_lab = QLabel('Your TI')
+        self.TI_text = QLabel('')
+        self.result_lab = QLabel('Your Tax')
+        self.result_text = QLabel('')
+        self.message = QLabel('')    
+        self.message.setAlignment(QtCore.Qt.AlignCenter)
+
+        #layout
+        self.layout.addRow(self.menubar)
+        self.layout.addRow(self.AGI_lab, self.AGI_in)
+        self.layout.addRow(self.NTI_lab, self.NTI_in)
+        self.layout.addRow(self.button_calculate)
+        self.layout.addRow(self.message)
+        self.layout.addRow(self.AGI_lab2, self.AGI_text)
+        self.layout.addRow(self.NTI_lab2, self.NTI_text)
+        self.layout.addRow(self.TI_lab, self.TI_text)
+        self.layout.addRow(self.result_lab, self.result_text)
+
+        #signal
+        self.action_save.triggered.connect(self.save_text)
+        self.action_open.triggered.connect(self.open_text)
+        self.action_quit.triggered.connect(self.quit)
+        self.button_calculate.clicked.connect(self.calculateTax)
+    
+    #save function
+    def save_text(self):
+        name, _ = QFileDialog.getSaveFileName(self, 'Save', self.file_name, 'TXT (*.txt)')
+        if name:
+            self.file_name = name
+            file = open(name, 'w')
+            text1 = self.AGI_in.text()
+            text2 = self.NTI_in.text()
+            file.write(text1)
+            file.write('\n')
+            file.write(text2)
+            file.close()
+    
+    #save function
+    def open_text(self):
+        name, _ = QFileDialog.getOpenFileName(self, 'Open', '', 'TXT (*.txt)')
+        if name:
+            self.file_name = name
+            file = open(name, 'r')
+            with file:
+                data = file.readlines() #to make the data inside the file to a list inside var data
+                data[0] = data[0].rstrip() # when the file is loaded, theres a whitespace at the end of the string, so rstip() to remove the whitespace
+                self.AGI_in.setText(data[0])
+                self.NTI_in.setText(data[1])
+                self.calculateTax()
+
+                file.close()
+                self.msg()
+    
+    #quit function
+    def quit(self):
+        QApplication.quit()
+
+    #Calculate Function
+    def calculateTax(self):
+        p1 = 50000000
+        p2 = 250000000
+        p3 = 500000000
+        val = 2500000 # = 50000000 * 0.05
+        AGI = self.AGI_in.text()
+        NTI = self.NTI_in.text()
+
+        if AGI and NTI:
+            if AGI.isnumeric() and NTI.isnumeric():
+                TI = float(AGI) - float(NTI)
+                AGI = float(AGI) 
+                NTI = float(NTI)
+                self.AGI_text.setText(str("{:,}".format(AGI)))
+                self.NTI_text.setText(str("{:,}".format(NTI)))
+                if TI <= p1:
+                    tax = TI * .05
+                    self.TI_text.setText(str("{:,}".format(TI)))
+                    self.result_text.setText(str("{:,}".format(tax)))
+                    self.message.setText('Success')
+                    
+                elif TI > p1 and TI <= p2:
+                    tax = val + (TI - p1) * .15
+                    self.TI_text.setText(str("{:,}".format(TI)))
+                    self.result_text.setText(str("{:,}".format(tax)))
+                    self.message.setText('Success')
+
+                elif TI > p2 and TI <= p3:
+                    tax = val + (p2 - p1) * .15 + (TI - p2) * .25
+                    self.TI_text.setText(str("{:,}".format(TI)))
+                    self.result_text.setText(str("{:,}".format(tax)))
+                    self.message.setText('Success')
+
+                elif TI > p3:
+                    tax = val + (p2 - p1) * .15 + (p3 - p2) * .25 + (TI - p3) * .3
+                    self.TI_text.setText(str("{:,}".format(TI)))
+                    self.result_text.setText(str("{:,}".format(tax)))
+                    self.message.setText('Success')
+            
+            else:
+                self.AGI_text.setText('Error')
+                self.NTI_text.setText('Error')
+                self.TI_text.setText('Error')
+                self.result_text.setText('Error')
+                self.message.setText('Cannot Proceed, only accept number')
+
+    #message box
+        def msg(self):
+            msg = QMessageBox()
+            msg.setText('Calculation completed')
+            msg.setIcon(QMessageBox.Icon.Information)
+            msg.exec_()
+
+
+app = QApplication([])
+window = Window()
+window.show()
+app.exec_()
